@@ -9,14 +9,29 @@ const walletRoutes = require("./routes/walletRoutes");
 
 const app = express();
 
-// ⭐ Middlewares first
+// ⭐ Allowed Origins
+const allowedOrigins = [
+  "http://localhost:5173",           // local frontend
+  "https://quickpay-ui.netlify.app"  // deployed frontend
+];
+
+// ⭐ CORS Middleware
 app.use(cors({
-  origin: [
-   
-    "https://quickpay-ui.netlify.app"
-  ],
-  credentials: true
+  origin: function(origin, callback){
+    // allow requests with no origin (Postman, mobile apps)
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"]
 }));
+
+// ⭐ Middleware
 app.use(express.json());
 
 // ⭐ Routes
@@ -29,16 +44,15 @@ app.get("/", (req, res) => {
   res.send("🚀 QuickPay API Running");
 });
 
-// ⭐ MongoDB Connect
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("✅ MongoDB Connected");
-    app.listen(5000, () =>
-      console.log("🚀 Server running at http://localhost:5000")
-    );
-  })
-  .catch((err) => console.error("❌ DB Error:", err));
+// ⭐ MongoDB Connect & Start Server
+const PORT = process.env.PORT || 5000;
+
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log("✅ MongoDB Connected");
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+})
+.catch(err => console.error("❌ DB Connection Error:", err));
