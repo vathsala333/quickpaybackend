@@ -9,50 +9,56 @@ const walletRoutes = require("./routes/walletRoutes");
 
 const app = express();
 
-// ⭐ Allowed Origins
+// Allowed Frontend URLs
 const allowedOrigins = [
-  "http://localhost:5173",           // local frontend
-  "https://quickpay-ui.netlify.app"  // deployed frontend
+  "http://localhost:5173",
+  "https://quickpay-frontend.netlify.app"
 ];
 
-// ⭐ CORS Middleware
-app.use(cors({
-  origin: function(origin, callback){
-    // allow requests with no origin (Postman, mobile apps)
-    if(!origin) return callback(null, true);
-    if(allowedOrigins.indexOf(origin) === -1){
-      const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true,
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization"]
-}));
+// CORS Setup
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow mobile apps / Postman without origin
+      if (!origin) return callback(null, true);
 
-// ⭐ Middleware
+      if (!allowedOrigins.includes(origin)) {
+        return callback(new Error("❌ CORS Blocked: " + origin), false);
+      }
+
+      return callback(null, true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// Allow browser preflight requests
+app.options("*", cors());
+
+// Middleware
 app.use(express.json());
 
-// ⭐ Routes
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/wallet", walletRoutes);
 
-// ⭐ Base route
+// Default Route
 app.get("/", (req, res) => {
-  res.send("🚀 QuickPay API Running");
+  res.send("🚀 QuickPay Backend Running Successfully");
 });
 
-// ⭐ MongoDB Connect & Start Server
+// Connect to MongoDB
 const PORT = process.env.PORT || 5000;
 
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log("✅ MongoDB Connected");
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-})
-.catch(err => console.error("❌ DB Connection Error:", err));
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("✅ MongoDB Connected");
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => console.log("❌ MongoDB Error:", err));
