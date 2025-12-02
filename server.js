@@ -12,7 +12,7 @@ const app = express();
 // ⭐ Middlewares first
 app.use(cors({
   origin: [
-    "http://localhost:5173",
+   
     "https://quickpay-ui.netlify.app"
   ],
   credentials: true
