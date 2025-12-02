@@ -10,7 +10,13 @@ const walletRoutes = require("./routes/walletRoutes");
 const app = express();
 
 // ⭐ Middlewares first
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://quickpay-ui.netlify.app"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // ⭐ Routes
