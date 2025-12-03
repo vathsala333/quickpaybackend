@@ -30,7 +30,7 @@ router.post("/signup", async (req, res) => {
       name,
       email,
       password: hashed,
-     // wallet: 0, // default wallet
+     // // default wallet
     });
 
     const token = generateToken(newUser);
