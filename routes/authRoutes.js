@@ -30,13 +30,13 @@ router.post("/signup", async (req, res) => {
       name,
       email,
       password: hashed,
-     // // default wallet
+      balance: 1000, // ⭐ default starting balance
     });
 
     const token = generateToken(newUser);
 
     res.json({
-      user: { id: newUser._id, name: newUser.name, email: newUser.email },
+      user: { id: newUser._id, name: newUser.name, email: newUser.email, balance: newUser.balance },
       token,
     });
   } catch (err) {
@@ -59,7 +59,7 @@ router.post("/login", async (req, res) => {
     const token = generateToken(user);
 
     res.json({
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, balance: user.balance },
       token,
     });
   } catch (err) {
@@ -88,22 +88,32 @@ router.post("/forgot-password", async (req, res) => {
     user.resetTokenExpiry = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    // Email sender
+    // ⭐ Brevo SMTP Transport
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: false,
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
 
     const resetLink = `http://localhost:5173/reset/${resetToken}`;
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"QuickPay Support" <${process.env.SMTP_USER}>`,
       to: user.email,
-      subject: "Password Reset",
-      text: `Click to reset your password: ${resetLink}`,
+      subject: "Password Reset Request",
+      html: `
+        <h2>Reset Your Password</h2>
+        <p>Click the button below to reset your password. This link expires in <b>10 minutes</b>.</p>
+        <a href="${resetLink}" 
+        style="background:#4A90E2;padding:10px 20px;color:white;text-decoration:none;border-radius:6px;">
+        Reset Password</a>
+        <br><br>
+        <small>If you didn't request this, just ignore this email.</small>
+      `
     });
 
     res.json({ message: "Password reset link sent!" });
@@ -143,3 +153,4 @@ router.post("/reset-password/:token", async (req, res) => {
 });
 
 module.exports = router;
+
