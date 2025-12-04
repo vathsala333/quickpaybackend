@@ -89,15 +89,16 @@ router.post("/forgot-password", async (req, res) => {
     await user.save();
 
     // ⭐ Brevo SMTP Transport
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+   const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.BREVO_SMTP_PASSWORD,
+  },
+});
+
 
     const resetLink = `http://localhost:5173/reset/${resetToken}`;
 
