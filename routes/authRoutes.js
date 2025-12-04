@@ -1,9 +1,7 @@
-
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const fetch = require("node-fetch"); // For Brevo API
 
 const router = express.Router();
 
@@ -30,7 +28,7 @@ router.post("/signup", async (req, res) => {
       name,
       email,
       password: hashed,
-      balance: 1000, // default starting balance
+      balance: 1000,
     });
 
     const token = generateToken(newUser);
@@ -68,7 +66,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ------------------ FORGOT PASSWORD (Brevo API) ------------------
+// ------------------ FORGOT PASSWORD USING BREVO ------------------
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -76,7 +74,6 @@ router.post("/forgot-password", async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Create reset token valid for 10 minutes
     const resetToken = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
@@ -87,10 +84,8 @@ router.post("/forgot-password", async (req, res) => {
     user.resetTokenExpiry = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    // Frontend reset URL
     const resetLink = `https://quickpay-frontend.netlify.app/reset/${resetToken}`;
 
-    // Brevo API call
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -114,7 +109,7 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     if (!response.ok) {
-      console.error("Brevo API error:", await response.text());
+      console.error(await response.text());
       return res.status(500).json({ message: "Failed to send reset email" });
     }
 
