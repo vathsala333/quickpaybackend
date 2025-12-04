@@ -2,12 +2,12 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
 const User = require("../models/User");
+const fetch = require("node-fetch"); // For Brevo API
 
 const router = express.Router();
 
-// Generate JWT
+// ------------------ JWT Generator ------------------
 const generateToken = (user) => {
   return jwt.sign(
     { userId: user._id, email: user.email },
@@ -30,7 +30,7 @@ router.post("/signup", async (req, res) => {
       name,
       email,
       password: hashed,
-      balance: 1000,
+      balance: 1000, // default starting balance
     });
 
     const token = generateToken(newUser);
@@ -63,11 +63,12 @@ router.post("/login", async (req, res) => {
       token,
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Login error" });
   }
 });
 
-// ------------------ FORGOT PASSWORD ------------------
+// ------------------ FORGOT PASSWORD (Brevo API) ------------------
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -75,6 +76,7 @@ router.post("/forgot-password", async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Create reset token valid for 10 minutes
     const resetToken = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
@@ -85,34 +87,36 @@ router.post("/forgot-password", async (req, res) => {
     user.resetTokenExpiry = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    // Nodemailer SMTP
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.BREVO_SMTP_PASSWORD,
-      },
-    });
-
-    // 🟢 Production frontend URL
+    // Frontend reset URL
     const resetLink = `https://quickpay-frontend.netlify.app/reset/${resetToken}`;
 
-    await transporter.sendMail({
-      from: `"QuickPay Support" <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: "Reset Your QuickPay Password",
-      html: `
-        <h2>Password Reset</h2>
-        <p>Click the button below to reset your password. Link expires in <b>10 minutes</b>.</p>
-        <a href="${resetLink}" style="background:#4caf50;padding:10px 15px;color:white;text-decoration:none;border-radius:5px;">
-          Reset Password
-        </a>
-        <br><br>
-        <small>If you did not request this, ignore this email.</small>
-      `
+    // Brevo API call
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": process.env.BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: { name: "QuickPay Support", email: process.env.EMAIL_USER },
+        to: [{ email: user.email }],
+        subject: "Reset Your QuickPay Password",
+        htmlContent: `
+          <h2>Password Reset</h2>
+          <p>Click the button below to reset your password. Link expires in <b>10 minutes</b>.</p>
+          <a href="${resetLink}" style="background:#4caf50;padding:10px 15px;color:white;text-decoration:none;border-radius:5px;">
+            Reset Password
+          </a>
+          <br><br>
+          <small>If you did not request this, ignore this email.</small>
+        `
+      }),
     });
+
+    if (!response.ok) {
+      console.error("Brevo API error:", await response.text());
+      return res.status(500).json({ message: "Failed to send reset email" });
+    }
 
     res.json({ message: "Reset link sent to your email!" });
 
