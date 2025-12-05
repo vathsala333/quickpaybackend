@@ -72,20 +72,25 @@ router.post("/forgot-password", async (req, res) => {
     const { email } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user)
+      return res.status(404).json({ message: "User not found with this email" });
 
+    // Generate token valid for 10 min
     const resetToken = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
       { expiresIn: "10m" }
     );
 
+    // Store in DB
     user.resetToken = resetToken;
     user.resetTokenExpiry = Date.now() + 10 * 60 * 1000;
     await user.save();
 
+    // Reset link
     const resetLink = `https://quickpay-frontend.netlify.app/reset/${resetToken}`;
 
+    // Send Email via Brevo
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -97,20 +102,24 @@ router.post("/forgot-password", async (req, res) => {
         to: [{ email: user.email }],
         subject: "Reset Your QuickPay Password",
         htmlContent: `
-          <h2>Password Reset</h2>
-          <p>Click the button below to reset your password. Link expires in <b>10 minutes</b>.</p>
-          <a href="${resetLink}" style="background:#4caf50;padding:10px 15px;color:white;text-decoration:none;border-radius:5px;">
+          <h2>Password Reset Request</h2>
+          <p>Hello ${user.name},</p>
+          <p>You requested to reset your password. Click below:</p>
+          <a href="${resetLink}" 
+            style="background:#4CAF50;padding:10px 15px;color:white;text-decoration:none;border-radius:5px;">
             Reset Password
           </a>
-          <br><br>
-          <small>If you did not request this, ignore this email.</small>
+          <p>This link expires in <b>10 minutes</b>.</p>
+          <br/>
+          <small>If this wasn't you, ignore this email.</small>
         `
       }),
     });
 
     if (!response.ok) {
-      console.error(await response.text());
-      return res.status(500).json({ message: "Failed to send reset email" });
+      const errorData = await response.text();
+      console.error("Brevo Error:", errorData);
+      return res.status(500).json({ message: "Email sending failed" });
     }
 
     res.json({ message: "Reset link sent to your email!" });
@@ -121,32 +130,43 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// ------------------ RESET PASSWORD ------------------
+
+
+// ========== 2️⃣ RESET PASSWORD ==========
 router.post("/reset-password/:token", async (req, res) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
 
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
     const user = await User.findOne({
+      _id: decoded.userId,
       resetToken: token,
-      resetTokenExpiry: { $gt: Date.now() }
+      resetTokenExpiry: { $gt: Date.now() },
     });
 
-    if (!user) return res.status(400).json({ message: "Invalid or expired token" });
+    if (!user)
+      return res.status(400).json({ message: "Token expired or user not found" });
 
+    // Update password
     user.password = await bcrypt.hash(password, 10);
     user.resetToken = undefined;
     user.resetTokenExpiry = undefined;
     await user.save();
 
-    res.json({ message: "Password reset successful!" });
+    res.json({ message: "Password reset successful! You can now login." });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Reset failed" });
+    res.status(500).json({ message: "Something went wrong" });
   }
 });
-
 module.exports = router;
 
 
