@@ -13,7 +13,41 @@ const generateToken = (user) => {
     { expiresIn: "1h" }
   );
 };
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: User authentication APIs
+ */
 
+/**
+ * @swagger
+ * /auth/signup:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Vathsala
+ *               email:
+ *                 type: string
+ *                 example: test@example.com
+ *               password:
+ *                 type: string
+ *                 example: test123
+ *     responses:
+ *       200:
+ *         description: User registered successfully
+ *       400:
+ *         description: Email already registered
+ */
 // ------------------ SIGNUP ------------------
 router.post("/signup", async (req, res) => {
   try {
@@ -42,7 +76,31 @@ router.post("/signup", async (req, res) => {
     res.status(500).json({ message: "Signup error" });
   }
 });
-
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login a user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: test@example.com
+ *               password:
+ *                 type: string
+ *                 example: test123
+ *     responses:
+ *       200:
+ *         description: Login success with JWT token
+ *       400:
+ *         description: Invalid login credentials
+ */
 // ------------------ LOGIN ------------------
 router.post("/login", async (req, res) => {
   try {
@@ -65,7 +123,28 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Login error" });
   }
 });
-
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Send password reset email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: test@example.com
+ *     responses:
+ *       200:
+ *         description: Email sent successfully
+ *       404:
+ *         description: User not found
+ */
 // ------------------ FORGOT PASSWORD USING BREVO ------------------
 router.post("/forgot-password", async (req, res) => {
   try {
@@ -129,7 +208,35 @@ router.post("/forgot-password", async (req, res) => {
     res.status(500).json({ message: "Error sending reset email" });
   }
 });
-
+/**
+ * @swagger
+ * /auth/reset-password/{token}:
+ *   post:
+ *     summary: Reset user password using token
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: JWT reset token sent by email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               password:
+ *                 type: string
+ *                 example: newPassword123
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Invalid or expired token
+ */
 
 
 // ========== 2️⃣ RESET PASSWORD ==========

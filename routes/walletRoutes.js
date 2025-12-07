@@ -3,6 +3,35 @@ const User = require("../models/User");
 const verifyToken = require("../middleware/authMiddleware");
 
 const router = express.Router();
+/**
+ * @swagger
+ * tags:
+ *   name: Wallet
+ *   description: Wallet balance and money operations
+ */
+
+/**
+ * @swagger
+ * /wallet/balance:
+ *   get:
+ *     summary: Get user wallet balance
+ *     tags: [Wallet]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Wallet balance returned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 balance:
+ *                   type: number
+ *                   example: 1200
+ *       404:
+ *         description: User not found
+ */
 
 // ⭐ Get wallet balance
 router.get("/balance", verifyToken, async (req, res) => {
@@ -12,6 +41,30 @@ router.get("/balance", verifyToken, async (req, res) => {
   res.json({ balance: user.wallet });
 });
 
+/**
+ * @swagger
+ * /wallet/add:
+ *   post:
+ *     summary: Add money to wallet
+ *     tags: [Wallet]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 example: 500
+ *     responses:
+ *       200:
+ *         description: Money added successfully
+ *       400:
+ *         description: Invalid amount
+ */
 // ⭐ Add money
 router.post("/add", verifyToken, async (req, res) => {
   const { amount } = req.body;
