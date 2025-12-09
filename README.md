@@ -40,10 +40,12 @@ GET	/api/payment/history	Get transaction history
  Swagger Docs
 
 Browse API documentation at:
-
+swagger2.png
 /api-docs
 
 <p align="center"> <img src="https://raw.githubusercontent.com/vathsala333/quickpaybackend/main/screenshot/swagger.png" width="500px"> </p>
+
+<p align="center"> <img src="https://raw.githubusercontent.com/vathsala333/quickpaybackend/main/screenshot/swagger2.png" width="500px"> </p>
  Run Locally
 git clone https://github.com/vathsala333/quickpaybackend.git
 
