@@ -50,8 +50,7 @@ Browse API docs at:
 
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/vathsala333/quickpaybackend/main/screenshot/swagger2.png
-" width="500px">
+  <img src="https://raw.githubusercontent.com/vathsala333/quickpaybackend/main/screenshot/swagger2.png" width="500px">
 </p>
 
 ---
@@ -60,7 +59,4 @@ Browse API docs at:
 
 ```bash
 git clone https://github.com/vathsala333/quickpaybackend.git
-cd quickpaybackend
-npm install
-# create .env with required keys
-npm run dev
+
